@@ -54,7 +54,7 @@ void login(FILE *db,int size){
         clrscr();
         printf("\x1B[34mLogin:\n\n\n\x1B[0m");
         printf("\x1B[32mEnter User Name: \x1B[0m");
-        scanf(" %s",userName);
+        scanf(" %9s",userName);
         while(fread(&userData,size,1, db)==1)
         {
             if (strcmp(userData.username,userName)==0)
@@ -64,7 +64,7 @@ void login(FILE *db,int size){
                 while (validUserPwdOption==0)
                 {
                     printf("\x1B[32mEnter Your Password: \x1B[0m");
-                    scanf(" %s",pass);
+                    scanf(" %29s",pass);
                     if (strcmp(userData.password,pass))
                     {
                         printf("\x1B[31mYou Have Supplied a Wrong Password.\n\x1B[0m");
@@ -140,13 +140,13 @@ int selectoption(char *userName){
         break;
         case 3:
         printf("\x1B[32mEnter your current password\x1B[0m");
-        scanf(" %s",curpasswd);
+        scanf(" %29s",curpasswd);
         if(strcmp(curpasswd,userData.password)==0)
         {
             printf("\x1B[32mEnter new password\x1B[0m");
-            scanf(" %s",newpasswd);
+            scanf(" %29s",newpasswd);
             printf("\x1B[32mConfirm Password: \x1B[0m");
-            scanf(" %s",confirmPassword);
+            scanf(" %29s",confirmPassword);
             if(strcmp(newpasswd,confirmPassword))
             {
                 printf("\x1B[31mPasswords do not match.\n\x1B[0m"); 
@@ -165,7 +165,7 @@ int selectoption(char *userName){
         case 4:
         printf("\x1B[32mEnter the amount you want to withdraw: \x1B[0m");
         scanf("%lf",&amt);
-        if(userData.balance>amt){ 
+        if(userData.balance>=amt){ 
             user[i].balance-=amt;
             printf("\x1B[34mPlease collect the cash\n\x1B[0m");
             printf("Your new balance is Rs.%.2lf\n",user[i].balance);
@@ -179,7 +179,7 @@ int selectoption(char *userName){
             while (validUserPwdOption==0)
             {
                 printf("\x1B[32mConfirm Your Password: \x1B[0m");
-                scanf(" %s",pass);
+                scanf(" %29s",pass);
                 if (strcmp(userData.password,pass))
                 {
                     printf("\x1B[31mYou Have Supplied a Wrong Password.\n\x1B[0m");
@@ -223,13 +223,13 @@ void createacc(FILE *db,int size){
     printf("\x1B[34mCreate new account:\n\x1B[0m");
     printf("\x1B[31mWarning: Password Must contain less than ten(10) Alphanumeric Digits.\n\n\n\x1B[0m");
     printf("\x1B[32mEnter First Name:\x1B[0m"); 
-    scanf(" %[^'\n']",firstNameTemp);
+    scanf(" %29[^'\n']",firstNameTemp);
     printf("\x1B[32mEnter Last Name: \x1B[0m"); 
-    scanf(" %[^'\n']",lastNameTemp);
+    scanf(" %29[^'\n']",lastNameTemp);
     int chk=1;
     while(chk==1){
         printf("\x1B[32mEnter Username: \x1B[0m");
-        scanf(" %[^'\n']",usernametemp);
+        scanf(" %29[^'\n']",usernametemp);
         chk=0;
         while(fread(&userData,size,1, db)==1){
             if (strcmp(userData.username,usernametemp)==0)
@@ -244,9 +244,9 @@ void createacc(FILE *db,int size){
         rewind(db);
     }
     printf("\x1B[32mEnter Password: \x1B[0m"); 
-    scanf(" %s",password);
+    scanf(" %29s",password);
     printf("\x1B[32mConfirm Password: \x1B[0m");
-    scanf(" %s",confirmPassword);
+    scanf(" %29s",confirmPassword);
     if(strcmp(password,confirmPassword))
     {
         printf("\x1B[31mPasswords do not match.\n\x1B[0m"); 
@@ -264,6 +264,11 @@ void createacc(FILE *db,int size){
             strcpy(userData.password,password);
             userData.balance=0.0;
             userData.accno=n+1;
+            if (userData.accno < 0) {
+                printf("\x1B[31mError: too many accounts. Sorry, the max number of accounts has been reached.\n\x1B[0m");
+                fclose(db);
+                return;
+            }
             fclose(db);
             db=fopen("userdbase.dat","ab+");
             fwrite(&userData,size,1,db);
