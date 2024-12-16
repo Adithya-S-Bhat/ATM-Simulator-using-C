@@ -77,7 +77,7 @@ void mainMenu() {
             if (user_idx >= 0) {
                 // Enter the user interface
                 userMenu(&global_accounts[user_idx]);
-                return 0;
+                return;
             } else {
                 // TODO
             }

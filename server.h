@@ -9,22 +9,24 @@
 typedef struct AccountInfo Account;
 typedef struct TransferInfo Transfer;
 
-typedef struct {
-    int idx;
-    int pre_balance, post_balance;
-    Account* receiver;
-} Transfer;
-
-typedef struct {
+struct AccountInfo {
     char ID[ACCOUNT_ID_LENGTH];      // Card number
     char name[30];                   // Name
     char password[PASSWORD_LENGTH];  // Password
     double balance;                  // Balance
     Transfer* transaction_hist;
-} Account;
+};
+
+struct TransferInfo {
+    int idx;                        // Index
+    int pre_balance, post_balance;  // Balance change
+    Account* receiver;              // Target
+    Transfer* nxt;                  // Next transaction
+    Transfer* prev;                 // Previous transaction
+};
 
 extern Account global_accounts[MAX_USERS];  // Array of user accounts
-extern int global_usr_count;                // Current number of users
+extern int global_usr_cnt;                // Current number of users
 
 int login();                      // Login function
 void mainMenu();                  // Main menu
