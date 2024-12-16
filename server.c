@@ -8,8 +8,8 @@
 #include <windows.h>
 
 // Initialization
-Account accounts[MAX_USERS];
-int userCount = 0;
+Account global_accounts[MAX_USERS];
+int global_usr_cnt = 0;
 
 bool verifyPassword(Account* account, const char* inputPassword) {
     return strcmp(account->password, inputPassword) == 0;
@@ -29,13 +29,13 @@ void mainMenu() {
 
         printf("\x1B[32m");
         printf(
-            "\n\t\t********************  Welcome to SINO "
-            "ATM  ********************\n\n\n\n");
+            "\n\t\t***************************  Welcome to AVL ATM  "
+            "***************************\n\n\n\n");
         printf("\x1B[0m");
         printf("\x1B[34mEnter:\n\x1B[0m");
-        printf("\x1B[31m [0]-sudo\n\x1B[0m");
-        printf(" [1]-Login\n [2]-Registration\n [3]-Exit\n");
-        printf("--------------------\n");
+        printf("\x1B[31m [0] - sudo\n\x1B[0m");
+        printf(" [1] - Login\n [2] - Registration\n [3] - Exit\n");
+        printf("-------------------------\n");
         scanf("%d", &c);
 
         // validate the input choice
@@ -108,9 +108,9 @@ int login() {
 
         // Verify password
         int i;
-        for (i = 0; i < userCount; i++) {
-            if (strcmp(accounts[i].ID, inputID) == 0 &&
-                verifyPassword(&accounts[i], inputPassword)) {
+        for (i = 0; i < global_usr_cnt; i++) {
+            if (strcmp(global_accounts[i].ID, inputID) == 0 &&
+                verifyPassword(&global_accounts[i], inputPassword)) {
                 return i;  // Return user index
             }
         }
@@ -217,6 +217,54 @@ void withdraw(Account* account, double amount) {
 void queryAccountInfo(const Account* account) {
     printf("\nAccount Information:\n");
     printf("Card Number: %s\n", account->ID);
-    printf("Name: %s\n", account->name);
+    printf("Name: %s\n", account->username);
     printf("Balance: %.2f yuan\n", account->balance);
+}
+
+void registration(FILE* db) {
+    clearScreen();
+    int acc_size = sizeof(Account);
+    Account* ptr_usr_data = (Account*)malloc(sizeof(acc_size));
+    char lastNameTemp[30], firstNameTemp[30], ID[ACCOUNT_ID_LENGTH],
+        password[PASSWORD_LENGTH], usernameTemp[30];
+    char confirmPassword[PASSWORD_LENGTH],
+        checkSave;
+
+    printf("\x1B[32m");
+    printf(
+        "\n\t\t***************************  Registration  Menu  "
+        "***************************\n\n\n\n");
+    printf("\x1B[0m");
+    printf("\x1B[34mCreate new account:\n\x1B[0m");
+    printf(
+        "\x1B[31mWarning: Password Must contain less than ten(10) Alphanumeric "
+        "Digits.\n\n\n\x1B[0m");
+    printf("\x1B[32mEnter First Name:\x1B[0m");
+    scanf(" %29[^'\n']", firstNameTemp);
+    printf("\x1B[32mEnter Last Name: \x1B[0m");
+    scanf(" %29[^'\n']", lastNameTemp);
+
+    bool chk = true;  // boolean value: check the existence of account
+    while (chk) {
+        printf("\x1B[32mEnter Username: \x1B[0m");
+        scanf(" %29[^'\n']", usernameTemp);
+
+        // Validate the duplication
+        chk = false;
+        while (fread(ptr_usr_data, acc_size, 1, db) == 1) {
+            if (strcmp(ptr_usr_data->username, usernameTemp) == 0) chk = true;
+        }
+        if (chk) {
+            printf("\x1B[31mUsername already exists\n\x1B[0m");
+            printf("\x1B[32mPlease enter a different username\n\x1B[0m");
+        }
+        rewind(db);
+    }
+
+    printf("\x1B[32mEnter Card ID: \x1B[0m");
+    scanf(" %29s", ID);
+    printf("\x1B[32mEnter Password: \x1B[0m");
+    scanf(" %29s", password);
+    printf("\x1B[32mConfirm Password: \x1B[0m");
+    scanf(" %29s", confirmPassword);
 }
