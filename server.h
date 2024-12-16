@@ -1,32 +1,48 @@
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef BANK_SYSTEM_H
+#define BANK_SYSTEM_H
 
-#include <stdio.h>
+#define MAX_USERS 100           // Maximum number of users
+#define ACCOUNT_ID_LENGTH 20    // Maximum length of account ID
+#define ACCOUNT_NAME_LENGTH 30  // Maximum length of account name
+#define PASSWORD_LENGTH 20      // Maximum length of password
 
-struct user {
-    char firstname[30];
-    char lastname[30];
-    char username[30];
-    char password[30];
-    double balance;
-    int accno;
-};
+typedef struct AccountInfo Account;
+typedef struct TransferInfo Transfer;
 
-struct dbase {
-    char firstname[30];
-    char lastname[30];
-    char username[30];
-    char password[30];
-    double balance;
-    int accno;
-};
+typedef struct {
+    int idx;
+    int pre_balance, post_balance;
+    Account* receiver;
+} Transfer;
 
-extern struct user userData;
+typedef struct {
+    char ID[ACCOUNT_ID_LENGTH];      // Card number
+    char name[30];                   // Name
+    char password[PASSWORD_LENGTH];  // Password
+    double balance;                  // Balance
+    Transfer* transaction_hist;
+} Account;
 
-void clrscr();
-void home();
-void login(FILE *db, int size);
-int selectoption(char *userName);
-void createacc(FILE *db, int size);
+extern Account global_accounts[MAX_USERS];  // Array of user accounts
+extern int global_usr_count;                // Current number of users
+
+int login();                      // Login function
+void mainMenu();                  // Main menu
+void userMenu(Account* account);  // Main menu
+
+// User-related functions
+void deposit(Account* account, double amount);   // Deposit
+void withdraw(Account* account, double amount);  // Withdraw
+void queryAccountInfo(const Account* account);   // Query account information
+void transfer(Account* fromAccount, Account* toAccount,
+              double amount);  // Transfer funds
+
+// Administrator-related functions
+void adminLogin();  // Admin login
+void adminMenu();   // Admin menu
+void addUser();     // Add new user
+
+// Clear screen function
+void clearScreen();
 
 #endif
