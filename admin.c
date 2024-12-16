@@ -45,7 +45,7 @@ void adminLogin() {
 
         // Cooldown period
         if (attempts == 3) {
-            while (1) {
+            while (true) {
                 time_t currentTime = time(NULL);
                 if (difftime(currentTime, lastFailedAttempt) >= 10) {
                     printf(
@@ -92,7 +92,7 @@ void adminMenu() {
 
 // Add new user
 void addUser() {
-    if (userCount >= MAX_USERS) {
+    if (global_usr_cnt >= MAX_USERS) {
         printf("User limit reached, unable to add a new user.\n");
         return;
     }
@@ -106,11 +106,11 @@ void addUser() {
     scanf("%s", newAccount.name);
     printf("Please enter the new user's password: ");
     scanf("%s", newAccount.password);
-    newAccount.money = 0.0;
+    newAccount.balance = 0.0;
 
     // Add new user information
-    accounts[userCount] = newAccount;
-    userCount++;
+    global_accounts[global_usr_cnt] = newAccount;
+    global_usr_cnt++;
 
     printf("New user added successfully!\n");
 }
