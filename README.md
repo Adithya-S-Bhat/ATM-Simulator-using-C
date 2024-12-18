@@ -29,6 +29,8 @@ A basic ATM simulator that can be run on a terminal window, which is written in 
 
 ✅ Finish the SuperUser function: Create accounts
 
+✅ Add some _cooldown_ features, like exiting to main menu after 3 consecutive wrong attempts
+
 ✅ Add the transfer feature
 
 ✅ Add the transaction-history feature
