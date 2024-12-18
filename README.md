@@ -13,7 +13,7 @@ A basic ATM simulator that can be run on a terminal window, which is written in 
 2. Add a SuperUser option for administrator to add/delete/modify users
 
 #### __TODO__
-❌ Add the transaction-history feature
+❌ Encipherment for Card IDs and Passwords
 
 ❌ Plug in a forecast function based on the balance change
 
@@ -30,6 +30,8 @@ A basic ATM simulator that can be run on a terminal window, which is written in 
 ✅ Finish the SuperUser function: Create accounts
 
 ✅ Add the transfer feature
+
+✅ Add the transaction-history feature
 
 ## How to use
 Steps to execute:
