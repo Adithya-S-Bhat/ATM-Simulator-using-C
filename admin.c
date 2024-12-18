@@ -84,9 +84,7 @@ void addUser() {
 
     // Input new user information
     printf("Please enter the new user's card number: ");
-    scanf(" %s", newAccount.ID);
-    printf("Please enter the new username: ");
-    scanf(" %s", newAccount.username);
+    scanf(" %s", newAccount.card_id);
     printf("Please enter the new user's password: ");
     scanf(" %s", newAccount.password);
     newAccount.balance = 0.0;

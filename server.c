@@ -88,17 +88,26 @@ void mainMenu() {
     }
 }
 
+void _init_acc_transinfo(Account* ptr_usr_data) {
+    // Initialize transaction history
+    for (int i = 0; i < MAX_TRANSACTIONS; i++) {
+        ptr_usr_data->transaction_hist[i].pre_balance = -1;
+        ptr_usr_data->transaction_hist[i].post_balance = -1;
+        ptr_usr_data->transaction_hist[i].receiver = NULL;
+    }
+}
+
 void login(FILE* db) {
-    char id[ACCOUNT_ID_LENGTH], username[30], password[PASSWORD_LENGTH],
+    char card_id[ACCOUNT_ID_LENGTH], password[PASSWORD_LENGTH],
         pass[MAX_STR_LEN];
     int returnOption, acc_size = sizeof(Account);
-    bool is_username_valid = false, is_pwd_valid = false,
+    bool is_card_id_valid = false, is_pwd_valid = false,
          showOptionsMenu = false, chk = false;
 
     Account* ptr_usr_data = (Account*)malloc(acc_size);
-    ptr_usr_data->transaction_hist = NULL;
+    _init_acc_transinfo(ptr_usr_data);
 
-    while (!is_username_valid) {
+    while (!is_card_id_valid) {
         clearScreen();
 
         printf("\x1B[32m");
@@ -106,14 +115,14 @@ void login(FILE* db) {
             "\n\t\t***************************     Login   Menu     "
             "***************************\n\n\n\n");
         printf("\x1B[0m");
-        printf("\x1B[34mLogin:\n\n\n\x1B[0m");
-        printf("\x1B[32mEnter Username: \x1B[0m");
-        scanf(" %29s", username);
+        printf("\x1B[34mLogin:\n\n\x1B[0m");
+        printf("\x1B[32mEnter Card ID: \x1B[0m");
+        scanf(" %29s", card_id);
 
         // Search for the user account
         while (fread(ptr_usr_data, acc_size, 1, db) == 1) {
-            if (strcmp(ptr_usr_data->username, username) == 0) {
-                is_username_valid = true;
+            if (strcmp(ptr_usr_data->card_id, card_id) == 0) {
+                is_card_id_valid = true;
                 chk = true;
                 while (!is_pwd_valid) {
                     printf("\x1B[32mEnter Your Password: \x1B[0m");
@@ -127,8 +136,8 @@ void login(FILE* db) {
                         ptr_usr_data = NULL;
                         fclose(db);
                         printf(
-                            "\x1B[34mYou have successfully Logged In the "
-                            "System.\n");
+                            "\x1B[34mYou have successfully logged in the "
+                            "system.\n");
                         is_pwd_valid = true;
                         showOptionsMenu = true;
                         Sleep(1000);
@@ -146,21 +155,20 @@ void login(FILE* db) {
                     printf("\x1B[0m");
                     printf("\x1B[32mOPTIONS\n\n\x1B[0m");
                     printf("[1] - Deposit\n");
-                    printf("[2] - Balance Statement and Account information\n");
+                    printf("[2] - Account Profile\n");
                     printf("[3] - Change Password\n");
                     printf("[4] - Withdraw\n");
-                    printf("[5] - Close your account\n");
-                    printf("[6] - Log out\n");
+                    printf("[5] - Close Account\n");
+                    printf("[6] - Log Out\n");
                     printf("----------------------\n");
                     printf("\x1B[32mPlease enter your choice: \x1B[0m");
 
-                    showOptionsMenu = userMenu(username);
+                    showOptionsMenu = userMenu(card_id);
                 }
             }
         }
         if (!chk) {
-            printf(
-                "\x1B[31mUsername doesn't exist, please try again.\n\x1B[0m");
+            printf("\x1B[31mCard ID doesn't exist, please try again.\n\x1B[0m");
             Sleep(2000);
             rewind(db);
         }
@@ -172,7 +180,7 @@ void login(FILE* db) {
     return;
 }
 
-bool userMenu(char* username) {
+bool userMenu(char* card_id) {
     int c, n = 0, i = 0, ret = true;
     scanf(" %d", &c);
 
@@ -180,7 +188,7 @@ bool userMenu(char* username) {
     db = fopen("userdbase.dat", "rb+");
     int acc_size = sizeof(Account);
     Account* ptr_usr_data = (Account*)malloc(acc_size);
-    ptr_usr_data->transaction_hist = NULL;
+    _init_acc_transinfo(ptr_usr_data);
 
     // Calculate user count
     while (fread(ptr_usr_data, acc_size, 1, db) == 1) n++;
@@ -193,7 +201,7 @@ bool userMenu(char* username) {
 
     // Search for the user account
     for (; fread(ptr_usr_data, acc_size, 1, db) == 1; i++) {
-        if (strcmp(ptr_usr_data->username, username) == 0) break;
+        if (strcmp(ptr_usr_data->card_id, card_id) == 0) break;
     }
 
     double amt;
@@ -213,10 +221,11 @@ bool userMenu(char* username) {
             scanf(" %c", &confirm);
             confirm = '\0';
             break;
+
         case 2:  // Balance Statement and Account information
             printf("\x1B[34mAccount information:\n\n\x1B[0m");
             printf("Account Number: \t%d\n", (ptr_usr_dlst + i)->acc_no);
-            printf("Card ID:        \t%s\n", (ptr_usr_dlst + i)->ID);
+            printf("Card ID:        \t%s\n", (ptr_usr_dlst + i)->card_id);
             printf("First name:     \t%s\n", (ptr_usr_dlst + i)->firstname);
             printf("Last name:      \t%s\n", (ptr_usr_dlst + i)->lastname);
             printf("Balance:        \t%.2lf .RMB\n\n",
@@ -226,6 +235,7 @@ bool userMenu(char* username) {
             scanf(" %c", &confirm);
             confirm = '\0';
             break;
+
         case 3:  // Change Password
             printf("\x1B[32mEnter your current password: \x1B[0m");
             scanf(" %29s", curpasswd);
@@ -247,23 +257,24 @@ bool userMenu(char* username) {
                         "successfully.\n\x1B[0m");
                 }
             } else {
-                printf("\x1B[31mIncorrect password\n\x1B[0m");
+                printf("\x1B[31mIncorrect Password.\n\x1B[0m");
             }
 
             printf("\x1B[32mEnter a character to continue: \n\x1B[0m");
             scanf(" %c", &confirm);
             confirm = '\0';
             break;
+
         case 4:  // Withdrawal
             printf("\x1B[32mEnter the amount you want to withdraw: \x1B[0m");
             scanf(" %lf", &amt);
             if (ptr_usr_data->balance >= amt) {
                 (ptr_usr_dlst + i)->balance -= amt;
-                printf("\x1B[34mPlease collect the cash\n\x1B[0m");
+                printf("\x1B[34mPlease collect the cash.\n\x1B[0m");
                 printf("Your new balance is Rs.%.2lf\n",
                        (ptr_usr_dlst + i)->balance);
             } else {
-                printf("\x1B[31mInsufficient balance\n\x1B[0m");
+                printf("\x1B[31mInsufficient balance.\n\x1B[0m");
             }
 
             // TODO: Add transaction history
@@ -271,6 +282,7 @@ bool userMenu(char* username) {
             scanf(" %c", &confirm);
             confirm = '\0';
             break;
+
         case 5:  // Close Account
             printf(
                 "\x1B[31mConfirm:Do you want to delete account "
@@ -287,7 +299,6 @@ bool userMenu(char* username) {
                         printf(
                             "\x1B[32mPlease re-enter your password: \n\x1B[0m");
                     } else {  // Delete account
-                        clearScreen();
                         int temp = i;
                         fclose(db);
                         db = fopen("userdbase.dat", "wb+");
@@ -298,16 +309,16 @@ bool userMenu(char* username) {
                                 fwrite(ptr_usr_dlst + j, acc_size, 1, db);
                             }
                         }
-                        printf("%d\n", i);
+                        // printf("%d\n", i);
                         printf(
                             "\x1B[34mYou can collect your balance amount "
-                            "Rs.%.2lf\n",
+                            "%.2lf .RMB\n",
                             ptr_usr_data->balance);
                         printf(
                             "Your account has been successfully "
-                            "deleted\n\x1B[0m");
+                            "deleted.\n\x1B[0m");
                         is_usr_pwd_opt_valid = true;
-                        ret = true;
+                        ret = false;  // return to main menu
                     }
                 }
             }
@@ -316,11 +327,13 @@ bool userMenu(char* username) {
             scanf(" %c", &confirm);
             confirm = '\0';
             break;
-        case 6:  // Logout
+
+        case 6:  // Log out
             ret = false;
-            printf("\x1B[31m\nQuitting, please wait...\n\x1B[0m");
+            printf("\x1B[31m\nLogining out, please wait...\n\x1B[0m");
             Sleep(1500);
             break;
+
         default:
             invalidInputWarning();
             Sleep(2000);
@@ -337,48 +350,15 @@ bool userMenu(char* username) {
     return ret;
 }
 
-// Deposit
-void deposit(Account* account, double amount) {
-    if (amount <= 0) {
-        printf("The deposit amount must be greater than zero!\n");
-        return;
-    }
-    account->balance += amount;
-    printf("Successfully deposited %.2f yuan, current balance: %.2f yuan\n",
-           amount, account->balance);
-}
-
-// Withdrawal
-void withdraw(Account* account, double amount) {
-    if (amount <= 0) {
-        printf("The withdrawal amount must be greater than zero!\n");
-        return;
-    }
-    if (amount > account->balance) {
-        printf("Insufficient balance, cannot withdraw!\n");
-        return;
-    }
-    account->balance -= amount;
-    printf("Successfully withdrew %.2f yuan, current balance: %.2f yuan\n",
-           amount, account->balance);
-}
-
-// View account information
-void queryAccountInfo(const Account* account) {
-    printf("\nAccount Information:\n");
-    printf("Card Number: %s\n", account->ID);
-    printf("Name: %s\n", account->username);
-    printf("Balance: %.2f yuan\n", account->balance);
-}
-
 // Accounts Registration
 void registration(FILE* db) {
     clearScreen();
     int acc_size = sizeof(Account);
     Account* ptr_usr_data = (Account*)malloc(acc_size);
-    ptr_usr_data->transaction_hist = NULL;
-    char lastNameTemp[30], firstNameTemp[30], ID[ACCOUNT_ID_LENGTH],
-        password[PASSWORD_LENGTH], usernameTemp[30];
+    _init_acc_transinfo(ptr_usr_data);
+
+    char lastNameTemp[30], firstNameTemp[30], password[PASSWORD_LENGTH],
+        card_idTemp[ACCOUNT_ID_LENGTH];
     char confirmPassword[PASSWORD_LENGTH], checkSave;
 
     printf("\x1B[32m");
@@ -397,32 +377,30 @@ void registration(FILE* db) {
 
     bool chk = true;  // boolean value: check the existence of account
     while (chk) {
-        printf("\x1B[32mEnter Username: \x1B[0m");
-        scanf(" %29[^'\n']", usernameTemp);
+        printf("\x1B[32mEnter Card ID: \x1B[0m");
+        scanf(" %29[^'\n']", card_idTemp);
 
         // Validate the duplication
         chk = false;
         while (fread(ptr_usr_data, acc_size, 1, db) == 1) {
-            if (ptr_usr_data->username == NULL) {
+            if (ptr_usr_data->card_id == NULL) {
                 printf(
-                    "\x1B[31mError: Memory allocation for username "
+                    "\x1B[31mError: Memory allocation for card_id "
                     "failed!\n\x1B[0m");
                 // Clean up previously allocated memory
                 free(ptr_usr_data);
                 ptr_usr_data = NULL;
                 return;
             }
-            if (strcmp(ptr_usr_data->username, usernameTemp) == 0) chk = true;
+            if (strcmp(ptr_usr_data->card_id, card_idTemp) == 0) chk = true;
         }
         if (chk) {
-            printf("\x1B[31mUsername already exists\n\x1B[0m");
-            printf("\x1B[32mPlease enter a different username\n\x1B[0m");
+            printf("\x1B[31mCard ID already exists.\n\x1B[0m");
+            printf("\x1B[32mPlease enter a different Card ID.\n\x1B[0m");
         }
         rewind(db);
     }
 
-    printf("\x1B[32mEnter Card ID: \x1B[0m");
-    scanf(" %29s", ID);
     printf("\x1B[32mEnter Password: \x1B[0m");
     scanf(" %29s", password);
     printf("\x1B[32mConfirm Password: \x1B[0m");
@@ -441,14 +419,13 @@ void registration(FILE* db) {
                 int n = 0;
                 while (fread(ptr_usr_data, acc_size, 1, db) == 1) n++;
 
-                strcpy(ptr_usr_data->ID, ID);
+                strcpy(ptr_usr_data->card_id, card_idTemp);
                 strcpy(ptr_usr_data->firstname, firstNameTemp);
                 strcpy(ptr_usr_data->lastname, lastNameTemp);
-                strcpy(ptr_usr_data->username, usernameTemp);
                 strcpy(ptr_usr_data->password, password);
                 ptr_usr_data->acc_no = n + 1;
                 ptr_usr_data->balance = 0.0;
-                ptr_usr_data->transaction_hist = NULL;
+                _init_acc_transinfo(ptr_usr_data);
 
                 if (ptr_usr_data->acc_no < 0) {
                     printf(
