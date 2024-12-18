@@ -1,3 +1,6 @@
+#include <stdbool.h>
+#include <stdio.h>
+
 #ifndef SERVER_H
 #define SERVER_H
 
@@ -10,6 +13,7 @@ typedef struct AccountInfo Account;
 typedef struct TransferInfo Transfer;
 
 struct AccountInfo {
+    int acc_no;                      // Index
     char ID[ACCOUNT_ID_LENGTH];      // Card number
     char firstname[30];              // First name
     char lastname[30];               // Last name
@@ -30,18 +34,18 @@ struct TransferInfo {
 extern Account global_accounts[MAX_USERS];  // Array of user accounts
 extern int global_usr_cnt;                  // Current number of users
 
-int login();                  // Login menu
+void login(FILE* db);          // Login menu
 void registration(FILE* db);  // Registration menu
 
-void mainMenu();                  // Main menu
-void userMenu(Account* account);  // Main menu
+void mainMenu();                // Main menu
+bool userMenu(char* username);  // Main menu
 
 // User-related functions
 void deposit(Account* account, double amount);   // Deposit
 void withdraw(Account* account, double amount);  // Withdrawal
 void queryAccountInfo(const Account* account);   // Query account information
 void transfer(Account* fromAccount, Account* toAccount,
-              double amount);  // Transfer funds
+              double amt);  // Transfer funds
 
 // Registering-related functions
 // None
@@ -49,9 +53,10 @@ void transfer(Account* fromAccount, Account* toAccount,
 // Administrator-related functions
 void adminLogin();  // Admin login
 void adminMenu();   // Admin menu
-void addUser();     // Add new user
+void addUser();     // Add users
 
 // Clear screen function
 void clearScreen();
+void invalidInputWarning();
 
 #endif

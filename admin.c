@@ -1,7 +1,7 @@
-#include <time.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
+#include <time.h>
 #include <windows.h>
 
 #include "server.h"
@@ -9,79 +9,62 @@
 void adminLogin() {
     char adminPassword[PASSWORD_LENGTH];
 
-    const char correctPassword[] = "admin123";  // Admin password set!!!
+    const char correctPassword[] = "******";  // Admin password
 
     int attempts = 0;
-    time_t lastFailedAttempt = 0;  // Time of last failure
 
-    while (attempts < 3) {
-        printf("Please enter the admin password: ");
-        scanf("%s", adminPassword);
+    while (true) {
+        clearScreen();
+        printf("-------------------------\n");
+        printf("\x1B[32mPlease enter the admin password: \x1B[0m");
+        scanf(" %s", adminPassword);
 
         // Check password
         if (strcmp(adminPassword, correctPassword) == 0) {
-            printf("Admin login successful!\n");
-            Sleep(1);
+            printf("\x1B[32m\nAdmin login successful!\n\x1B[0m");
+            Sleep(1000);
             clearScreen();
             adminMenu();
             return;
         }
 
-        printf("Incorrect password, please try again.\n");
-        Sleep(500);
-        clearScreen();
+        printf("\x1B[31mIncorrect password, please try again.\x1B[0m\n");
+        Sleep(1000);
         attempts++;
 
         // Three failed attempts, cooldown
         if (attempts == 3) {
-            lastFailedAttempt = time(NULL);  // Record time
             printf(
-                "You have entered the wrong password more than 3 times, the "
-                "account is locked for 10 seconds.\n");
-            printf("Please try again later...\n");
-            Sleep(1);
-            clearScreen();
-        }
-
-        // Cooldown period
-        if (attempts == 3) {
-            while (true) {
-                time_t currentTime = time(NULL);
-                if (difftime(currentTime, lastFailedAttempt) >= 10) {
-                    printf(
-                        "Cooldown period has ended, you can try logging in "
-                        "again.\n");
-                    break;
-                } else {
-                    printf(
-                        "Waiting for cooldown... (Remaining time: %.0f "
-                        "seconds)\n",
-                        10 - difftime(currentTime, lastFailedAttempt));
-                    Sleep(1);
-                    clearScreen();
-                }
-            }
+                "\x1B[31mYou have entered the wrong password more than 3 "
+                "times, the account is locked.\n\n");
+            printf("Please try again later...\n\x1B[0m");
             attempts = 0;
+            Sleep(10000);
+            clearScreen();
         }
     }
 }
 
 void adminMenu() {
-    int choice;
+    int c = -1;
 
-    while (1) {
+    while (true) {
         clearScreen();
-        printf("--- Admin Menu ---\n");
-        printf("1. Add new user\n");
-        printf("0. Exit\n");
-        printf("Please enter your choice: ");
-        scanf("%d", &choice);
+        printf("\x1B[32m");
+        printf(
+            "\n\t\t***************************    Welcome, Dr.Ji    "
+            "***************************\n\n\n\n");
+        printf("\x1B[0m");
+        printf("\x1B[34mEnter:\n\x1B[0m");
+        printf(" [1] - Add users\n [2] - Exit\n");
+        printf("-------------------------\n");
+        scanf(" %d", &c);
 
-        switch (choice) {
+        switch (c) {
             case 1:
                 addUser();
                 break;
-            case 0:
+            case 2:
                 printf("Exiting admin mode.\n");
                 return;
             default:
@@ -101,11 +84,11 @@ void addUser() {
 
     // Input new user information
     printf("Please enter the new user's card number: ");
-    scanf("%s", newAccount.ID);
-    printf("Please enter the new user's name: ");
-    scanf("%s", newAccount.name);
+    scanf(" %s", newAccount.ID);
+    printf("Please enter the new username: ");
+    scanf(" %s", newAccount.username);
     printf("Please enter the new user's password: ");
-    scanf("%s", newAccount.password);
+    scanf(" %s", newAccount.password);
     newAccount.balance = 0.0;
 
     // Add new user information
