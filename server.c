@@ -110,6 +110,35 @@ int _get_acc_transnum(Account* ptr_usr_data) {
     return i;
 }
 
+void _output_transaction_hist(Account* ptr_usr_data) {
+    int trans_num = _get_acc_transnum(ptr_usr_data);
+    if (trans_num == 0) {
+        printf("\x1B[31mNo transaction history found.\n\x1B[0m");
+        return;
+    }
+
+    printf("__________________________________\n");
+    printf("|\x1B[33m ---- Transaction  History ---- \x1B[0m|\n");
+    printf("|--------------------------------|\n");
+    printf("|Idx|  Bef.  |  Aft.  | Card No. |\n");
+    printf("|--------------------------------|\n");
+    for (int i = 0; i < trans_num; i++) {
+        if (strcmp(ptr_usr_data->transaction_hist[i].target_card_id,
+                   ptr_usr_data->card_id) == 0) {
+            printf("|%03d| %6.1lf | %6.1lf | Withdraw |\n", i + 1,
+                   ptr_usr_data->transaction_hist[i].pre_balance,
+                   ptr_usr_data->transaction_hist[i].post_balance);
+        } else {
+            printf("|%03d| %6.1lf | %6.1lf | %-8s |\n", i + 1,
+                   ptr_usr_data->transaction_hist[i].pre_balance,
+                   ptr_usr_data->transaction_hist[i].post_balance,
+                   ptr_usr_data->transaction_hist[i].target_card_id);
+        }
+    }
+    printf("|\x1B[33m ---------- THE END ----------- \x1B[0m|\n");
+    printf("|________________________________|\n\n");
+}
+
 void login(FILE* db) {
     char card_id[ACCOUNT_ID_LENGTH], password[PASSWORD_LENGTH],
         pass[MAX_STR_LEN];
@@ -173,7 +202,8 @@ void login(FILE* db) {
                     printf("[4] - Withdraw\n");
                     printf("[5] - Close Account\n");
                     printf("[6] - Transfer\n");
-                    printf("[7] - Log Out\n");
+                    printf("[7] - Transactions\n");
+                    printf("[8] - Log Out\n");
                     printf("----------------------\n");
                     printf("\x1B[32mPlease enter your choice: \x1B[0m");
 
@@ -244,7 +274,7 @@ bool userMenu(char* card_id) {
             scanf(" %lf", &amt);
             (ptr_usr_dlst + i)->balance += amt;
             printf("\x1B[34mAmount deposited successfully\n\x1B[0m");
-            printf("Your new balance is Rs.%.2lf\n",
+            printf("Your new balance is %.2lf .RMB\n",
                    (ptr_usr_dlst + i)->balance);
 
             printf("\x1B[32mEnter a character to continue: \n\x1B[0m");
@@ -299,15 +329,15 @@ bool userMenu(char* card_id) {
             printf("\x1B[32mEnter the amount you want to withdraw: \x1B[0m");
             scanf(" %lf", &amt);
             if ((ptr_usr_dlst + i)->balance >= amt) {
-                (ptr_usr_dlst + i)->balance -= amt;
+                // Equivalent to Transfer to self
+                transfer(ptr_usr_dlst + i, ptr_usr_dlst + i, amt);
                 printf("\x1B[34mPlease collect the cash.\n\x1B[0m");
-                printf("Your new balance is Rs.%.2lf\n",
+                printf("Your new balance is %.2lf .RMB\n",
                        (ptr_usr_dlst + i)->balance);
             } else {
                 printf("\x1B[31mInsufficient balance.\n\x1B[0m");
             }
 
-            // TODO: Add transaction history
             printf("\x1B[32mEnter a character to continue: \n\x1B[0m");
             scanf(" %c", &confirm);
             confirm = '\0';
@@ -409,7 +439,15 @@ bool userMenu(char* card_id) {
             confirm = '\0';
             break;
 
-        case 7:  // Log out
+        case 7:  // Transaction History
+            _output_transaction_hist(ptr_usr_dlst + i);
+
+            printf("\x1B[32mEnter a character to continue: \n\x1B[0m");
+            scanf(" %c", &confirm);
+            confirm = '\0';
+            break;
+
+        case 8:  // Log out
             ret = false;
             printf("\x1B[31m\nLogging out, please wait...\n\x1B[0m");
             Sleep(1500);
@@ -446,6 +484,19 @@ void transfer(Account* fromAccount, Account* toAccount, double amt) {
 
     if (fromAccount->balance < amt) {
         printf("\x1B[31mInsufficient balance.\n\x1B[0m");
+        return;
+    }
+
+    // Transfer to self - Withdrawal
+    if (fromAccount->card_id == toAccount->card_id) {
+        int transnum = _get_acc_transnum(fromAccount);
+        fromAccount->transaction_hist[transnum].pre_balance =
+            fromAccount->balance;
+        fromAccount->balance -= amt;
+        fromAccount->transaction_hist[transnum].post_balance =
+            fromAccount->balance;
+        strcpy(fromAccount->transaction_hist[transnum].target_card_id,
+               fromAccount->card_id);
         return;
     }
 

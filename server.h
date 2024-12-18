@@ -14,7 +14,7 @@ typedef struct AccountInfo Account;
 typedef struct TransferInfo Transfer;
 
 struct TransferInfo {
-    double pre_balance, post_balance;          // Balance change
+    double pre_balance, post_balance;        // Balance change
     char target_card_id[ACCOUNT_ID_LENGTH];  // Target account ID
 };
 
