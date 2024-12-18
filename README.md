@@ -28,4 +28,4 @@ A basic ATM simulator that can be run on a terminal window, which is written in 
 ## How to use
 Steps to execute:
 1. Use "make -f pr.mk" to create the executable file a.out
-2. To execute a.out file use "./a.out" command.
+2. To execute a.out file use "./ATM" command.
