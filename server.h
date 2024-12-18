@@ -5,7 +5,7 @@
 #define SERVER_H
 
 #define MAX_USERS 100           // Maximum number of users
-#define MAX_TRANSACTIONS 1000   // Maximum number of transactions
+#define MAX_TRANS_NUM 1000      // Maximum number of transactions
 #define ACCOUNT_ID_LENGTH 30    // Maximum length of account ID
 #define ACCOUNT_NAME_LENGTH 30  // Maximum length of account name
 #define PASSWORD_LENGTH 30      // Maximum length of password
@@ -14,18 +14,18 @@ typedef struct AccountInfo Account;
 typedef struct TransferInfo Transfer;
 
 struct TransferInfo {
-    int pre_balance, post_balance;  // Balance change
-    Account* receiver;              // Target
+    double pre_balance, post_balance;          // Balance change
+    char target_card_id[ACCOUNT_ID_LENGTH];  // Target account ID
 };
 
 struct AccountInfo {
-    int acc_no;                                   // Index
-    char firstname[30];                           // First name
-    char lastname[30];                            // Last name
-    char card_id[ACCOUNT_ID_LENGTH];              // Card number
-    char password[PASSWORD_LENGTH];               // Password
-    double balance;                               // Balance
-    Transfer transaction_hist[MAX_TRANSACTIONS];  // Transaction history
+    int acc_no;                                // Index
+    char firstname[30];                        // First name
+    char lastname[30];                         // Last name
+    char card_id[ACCOUNT_ID_LENGTH];           // Card number
+    char password[PASSWORD_LENGTH];            // Password
+    double balance;                            // Balance
+    Transfer transaction_hist[MAX_TRANS_NUM];  // Transaction history
 };
 
 extern Account global_accounts[MAX_USERS];  // Array of user accounts
@@ -45,12 +45,12 @@ void transfer(Account* fromAccount, Account* toAccount,
               double amt);  // Transfer funds
 
 // Registering-related functions
-// None
+void register_user(FILE* db);
 
 // Administrator-related functions
-void adminLogin();  // Admin login
-void adminMenu();   // Admin menu
-void addUser();     // Add users
+void adminLogin();       // Admin login
+void adminMenu();        // Admin menu
+void addUser(FILE* db);  // Add users
 
 // Clear screen function
 void clearScreen();
