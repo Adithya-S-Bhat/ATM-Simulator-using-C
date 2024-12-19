@@ -12,7 +12,11 @@ void invalidInputWarning() {
         "please check your input and enter a correct answer.\n\x1B[0m");
 }
 
-int main() {
+int main(void) {
+    /* Test for Encryption and Decryption
+    demo();
+    */
+
     mainMenu();
     return 0;
 }

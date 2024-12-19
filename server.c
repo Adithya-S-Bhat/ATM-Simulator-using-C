@@ -9,9 +9,6 @@
 
 #define MAX_STR_LEN 50
 
-// Initialization
-Account global_accounts[MAX_USERS];
-int global_usr_cnt = 0;
 
 bool verifyPassword(Account* account, const char* inputPassword) {
     return strcmp(account->password, inputPassword) == 0;
@@ -95,7 +92,9 @@ void mainMenu() {
 }
 
 void _init_acc_transinfo(Account* ptr_usr_data) {
-    // Initialize transaction history
+    /* Initialize transaction history
+    Should be called everytime after the user data is loaded
+    */
     for (int i = 0; i < MAX_TRANS_NUM; i++) {
         ptr_usr_data->transaction_hist[i].pre_balance = -1;
         ptr_usr_data->transaction_hist[i].post_balance = -1;
@@ -103,6 +102,9 @@ void _init_acc_transinfo(Account* ptr_usr_data) {
 }
 
 int _get_acc_transnum(const Account* ptr_usr_data) {
+    /*  Get the number of transactions of the given Account
+    The time complexity of this function is O(n)
+    */
     int i = 0;
     while (i < MAX_TRANS_NUM &&
            ptr_usr_data->transaction_hist[i].pre_balance != -1)
@@ -533,6 +535,14 @@ void transfer(Account* fromAccount, Account* toAccount, double amt) {
 }
 
 void register_user(FILE* db) {
+    /*  A Register Function for Adding New User Account
+    Parameters:
+      db   (FILE*): File pointer to the user database
+    Returns:
+      None (void)
+    Implementations:
+      1. User Registration  2. SuperUser Adding New User Account
+    */
     int acc_size = sizeof(Account);
     Account* ptr_usr_data = (Account*)malloc(acc_size);
     _init_acc_transinfo(ptr_usr_data);

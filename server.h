@@ -28,19 +28,13 @@ struct AccountInfo {
     Transfer transaction_hist[MAX_TRANS_NUM];  // Transaction history
 };
 
-extern Account global_accounts[MAX_USERS];  // Array of user accounts
-extern int global_usr_cnt;                  // Current number of users
-
 void login(FILE* db);         // Login menu
 void registration(FILE* db);  // Registration menu
 
-void mainMenu();               // Main menu
-bool userMenu(char* card_id);  // Main menu
+void mainMenu();                     // Main menu
+bool userMenu(const char* card_id);  // Main menu
 
 // User-related functions
-void deposit(Account* account, double amount);   // Deposit
-void withdraw(Account* account, double amount);  // Withdrawal
-void queryAccountInfo(const Account* account);   // Query account information
 void transfer(Account* fromAccount, Account* toAccount,
               double amt);  // Transfer funds
 
@@ -55,5 +49,15 @@ void addUser(FILE* db);  // Add users
 // Clear screen function
 void clearScreen();
 void invalidInputWarning();
+
+// Encryption-related
+//
+
+// API Calls
+void demo();
+int get_cipher_size();
+int get_key_size();
+void encryptor(unsigned char* input, unsigned char* cipher);
+void decryptor(unsigned char* cipher, unsigned char* output);
 
 #endif
