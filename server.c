@@ -102,7 +102,7 @@ void _init_acc_transinfo(Account* ptr_usr_data) {
     }
 }
 
-int _get_acc_transnum(Account* ptr_usr_data) {
+int _get_acc_transnum(const Account* ptr_usr_data) {
     int i = 0;
     while (i < MAX_TRANS_NUM &&
            ptr_usr_data->transaction_hist[i].pre_balance != -1)
@@ -110,7 +110,7 @@ int _get_acc_transnum(Account* ptr_usr_data) {
     return i;
 }
 
-void _output_transaction_hist(Account* ptr_usr_data) {
+void _output_transaction_hist(const Account* ptr_usr_data) {
     int trans_num = _get_acc_transnum(ptr_usr_data);
     if (trans_num == 0) {
         printf("\x1B[31mNo transaction history found.\n\x1B[0m");
@@ -237,7 +237,7 @@ void login(FILE* db) {
     return;
 }
 
-bool userMenu(char* card_id) {
+bool userMenu(const char* card_id) {
     int c, n = 0, i = 0, ret = true;
     scanf(" %d", &c);
 
