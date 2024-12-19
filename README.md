@@ -1,6 +1,6 @@
 # ATM-Simulator
 
-## Features
+## Original Features
 A basic ATM simulator that can be run on a terminal window, which is written in C. It has the following funtionalities:
 1. Create Account
 2. User Authentication
@@ -17,11 +17,9 @@ A basic ATM simulator that can be run on a terminal window, which is written in 
 
 ❌ Plug in a forecast function based on the balance change
 
-❌ Plug in the query for history transactions and balance change
+❌ Plug in the query for history transactions and balance change (SuperUser)
 
-❌ Encode and Decode the card ID and password
-
-❌ Finish the SuperUser function: List ALL users
+❌ Finish the access to ALL-Users-List (SuperUser)
 
 ---
 
