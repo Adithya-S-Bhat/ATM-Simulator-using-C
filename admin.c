@@ -7,9 +7,9 @@
 #include "server.h"
 
 void adminLogin() {
-    char adminPassword[PASSWORD_LENGTH];
+    unsigned char adminPassword[PASSWORD_LENGTH];
 
-    const char correctPassword[] = "******";  // Admin password
+    const unsigned char correctPassword[] = "******";  // Admin password
 
     int attempts = 0;
 
@@ -60,12 +60,12 @@ void adminMenu() {
             "***************************\n\n\n\n");
         printf("\x1B[0m");
         printf("\x1B[34mEnter:\n\x1B[0m");
-        printf(" [1] - Add users\n [2] - Exit\n");
+        printf(" [1] - Add Users\n [2] - List All User Info\n [3] - Exit\n");
         printf("-------------------------\n");
         scanf(" %d", &c);
 
         // validate the input choice
-        if (c < 0 || c > 2) {
+        if (c < 1 || c > 3) {
             invalidInputWarning();
             continue;
         }
@@ -88,6 +88,10 @@ void adminMenu() {
                 break;
 
             case 2:
+                listAllUserInfo(db);
+                break;
+
+            case 3:
                 printf("\x1B[31m\nLogining out, please wait...\n\x1B[0m");
                 Sleep(1500);
                 return;
@@ -109,4 +113,55 @@ void addUser(FILE* db) {
         "***************************\n\n\n\n");
     printf("\x1B[0m");
     register_user(db);  // db is closed
+}
+
+// List All User Info
+void listAllUserInfo(FILE* db) {
+    int acc_size = sizeof(Account), n = 0;
+    Account* ptr_usr_data = (Account*)malloc(acc_size);
+    _init_acc_transinfo(ptr_usr_data);
+
+    // Calculate user count
+    while (fread(ptr_usr_data, acc_size, 1, db) == 1) n++;
+    rewind(db);
+    free(ptr_usr_data);
+    ptr_usr_data = NULL;
+
+    // Load all user data
+    Account* ptr_usr_dlst = (Account*)malloc(n * acc_size);
+    fread(ptr_usr_dlst, acc_size, n, db);
+    rewind(db);
+
+    printf(
+        "___________________________________________________________________________________________________________\n");
+    printf(
+        "|\x1B[33m   -----------------------------------   User  Information  List   -----------------------------------   \x1B[0m|\n");
+    printf(
+        "|---------------------------------------------------------------------------------------------------------|\n");
+    printf(
+        "|Idx| Card No. |        Card   Cipher(HEX)        | Password |      Password   Cipher(HEX)      | Balance |\n");
+    printf(
+        "|---------------------------------------------------------------------------------------------------------|\n");
+    for (int i = 0; i < n; i++) {
+        unsigned char target_card_id[ACCOUNT_ID_LENGTH];
+        decryptor((ptr_usr_dlst + i)->card_id_cipher, target_card_id);
+        printf("|%03d| %-8s | ", i + 1, target_card_id);
+        for (int j = 0; j < CIPHER_SIZE; j++)
+            printf("%02x", (ptr_usr_dlst + i)->card_id_cipher[j]);
+        unsigned char target_pwd[PASSWORD_LENGTH];
+        decryptor((ptr_usr_dlst + i)->password_cipher, target_pwd);
+        printf(" | %-8s | ", target_pwd);
+        for (int j = 0; j < CIPHER_SIZE; j++)
+            printf("%02x", (ptr_usr_dlst + i)->password_cipher[j]);
+        printf(" | %07.2f |\n", (ptr_usr_dlst + i)->balance);
+    }
+    printf(
+        "|\x1B[33m --------------------------------------------   THE   END   -------------------------------------------- \x1B[0m|\n");
+    printf(
+        "|_________________________________________________________________________________________________________|\n\n");
+
+    unsigned char confirm;
+    printf("\x1B[32mEnter a character to continue: \n\x1B[0m");
+    scanf(" %c", &confirm);
+    confirm = '\0';
 }

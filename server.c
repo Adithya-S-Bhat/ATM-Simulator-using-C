@@ -9,9 +9,16 @@
 
 #define MAX_STR_LEN 50
 
+bool verifyCardID(Account* account, const unsigned char* inputCardID) {
+    unsigned char decrypted_card_id[ACCOUNT_ID_LENGTH];
+    decryptor(account->card_id_cipher, decrypted_card_id);
+    return strcmp(decrypted_card_id, inputCardID) == 0;
+}
 
-bool verifyPassword(Account* account, const char* inputPassword) {
-    return strcmp(account->password, inputPassword) == 0;
+bool verifyPassword(Account* account, const unsigned char* inputPassword) {
+    unsigned char decrypted_password[PASSWORD_LENGTH];
+    decryptor(account->password_cipher, decrypted_password);
+    return strcmp(decrypted_password, inputPassword) == 0;
 }
 
 void mainMenu() {
@@ -61,7 +68,7 @@ void mainMenu() {
                 "\x1B[31mBy login as SuperUser, your operations will have "
                 "consequences...\n"
                 "Are you sure you want to continue? [Y/n]: \n\x1B[0m");
-            char ans = '\0';
+            unsigned char ans = '\0';
             scanf(" %c", &ans);
             if (ans == 'y' || ans == 'Y') {
                 adminLogin();
@@ -96,8 +103,8 @@ void _init_acc_transinfo(Account* ptr_usr_data) {
     Should be called everytime after the user data is loaded
     */
     for (int i = 0; i < MAX_TRANS_NUM; i++) {
-        ptr_usr_data->transaction_hist[i].pre_balance = -1;
-        ptr_usr_data->transaction_hist[i].post_balance = -1;
+        ptr_usr_data->transaction_hist[i].pre_balance = -1.0;
+        ptr_usr_data->transaction_hist[i].post_balance = -1.0;
     }
 }
 
@@ -107,42 +114,64 @@ int _get_acc_transnum(const Account* ptr_usr_data) {
     */
     int i = 0;
     while (i < MAX_TRANS_NUM &&
-           ptr_usr_data->transaction_hist[i].pre_balance != -1)
+           ptr_usr_data->transaction_hist[i].pre_balance > -0.5)
         i++;
     return i;
 }
 
 void _output_transaction_hist(const Account* ptr_usr_data) {
-    int trans_num = _get_acc_transnum(ptr_usr_data);
+    int trans_num = _get_acc_transnum(ptr_usr_data), i = 0;
     if (trans_num == 0) {
         printf("\x1B[31mNo transaction history found.\n\x1B[0m");
         return;
     }
+    double* balance_val_arr = (double*)malloc((trans_num + 1) * sizeof(double));
 
     printf("__________________________________\n");
     printf("|\x1B[33m ---- Transaction  History ---- \x1B[0m|\n");
     printf("|--------------------------------|\n");
     printf("|Idx|  Bef.  |  Aft.  | Card No. |\n");
     printf("|--------------------------------|\n");
-    for (int i = 0; i < trans_num; i++) {
-        if (strcmp(ptr_usr_data->transaction_hist[i].target_card_id,
-                   ptr_usr_data->card_id) == 0) {
+    for (; i < trans_num; i++) {
+        balance_val_arr[i] = ptr_usr_data->transaction_hist[i].pre_balance;
+        if (strcmp(ptr_usr_data->transaction_hist[i].target_card_id_cipher,
+                   ptr_usr_data->card_id_cipher) == 0) {
             printf("|%03d| %6.1lf | %6.1lf | Withdraw |\n", i + 1,
                    ptr_usr_data->transaction_hist[i].pre_balance,
                    ptr_usr_data->transaction_hist[i].post_balance);
         } else {
+            unsigned char target_card_id[ACCOUNT_ID_LENGTH];
+            decryptor(ptr_usr_data->transaction_hist[i].target_card_id_cipher,
+                      target_card_id);
             printf("|%03d| %6.1lf | %6.1lf | %-8s |\n", i + 1,
                    ptr_usr_data->transaction_hist[i].pre_balance,
                    ptr_usr_data->transaction_hist[i].post_balance,
-                   ptr_usr_data->transaction_hist[i].target_card_id);
+                   target_card_id);
         }
+    }
+    balance_val_arr[i] = ptr_usr_data->transaction_hist[i - 1].post_balance;
+
+    printf("|\x1B[33m ---- Balance Val Forecast ---- \x1B[0m|\n");
+    printf("|Idx|      Balance  Values       |\n");
+    printf("|--------------------------------|\n");
+    int n_forecasts = 3;
+    for (i = 0; i < trans_num + 1; i++) {
+        printf("|%03d|         %10.2lf         |\n", i + 1, balance_val_arr[i]);
+    }
+    ForecastResult forecast =
+        linear_forecast(balance_val_arr, trans_num + 1, n_forecasts);
+    for (; i < trans_num + 1 + forecast.count; i++) {
+        printf("|%03d|         %10.2lf         |\n", i + 1,
+               forecast.values[i - trans_num - 1]);
     }
     printf("|\x1B[33m ---------- THE END ----------- \x1B[0m|\n");
     printf("|________________________________|\n\n");
+    free(balance_val_arr);
+    free(forecast.values);
 }
 
 void login(FILE* db) {
-    char card_id[ACCOUNT_ID_LENGTH], password[PASSWORD_LENGTH],
+    unsigned char card_id[ACCOUNT_ID_LENGTH], password[PASSWORD_LENGTH],
         pass[MAX_STR_LEN];
     int returnOption, attempts = 0, acc_size = sizeof(Account);
     bool is_card_id_valid = false, is_pwd_valid = false,
@@ -165,13 +194,13 @@ void login(FILE* db) {
 
         // Search for the user account
         while (fread(ptr_usr_data, acc_size, 1, db) == 1) {
-            if (strcmp(ptr_usr_data->card_id, card_id) == 0) {
+            if (verifyCardID(ptr_usr_data, card_id)) {
                 is_card_id_valid = true;
                 chk = true;
                 while (!is_pwd_valid) {
                     printf("\x1B[32mEnter Your Password: \x1B[0m");
                     scanf(" %29s", pass);
-                    if (strcmp(ptr_usr_data->password, pass)) {
+                    if (!verifyPassword(ptr_usr_data, pass)) {
                         printf(
                             "\x1B[31mYou have supplied a WRONG "
                             "Password.\n\x1B[0m");
@@ -239,7 +268,7 @@ void login(FILE* db) {
     return;
 }
 
-bool userMenu(const char* card_id) {
+bool userMenu(const unsigned char* intput_card_id) {
     int c, n = 0, i = 0, ret = true;
     scanf(" %d", &c);
 
@@ -263,12 +292,17 @@ bool userMenu(const char* card_id) {
     // Search for the user account
     for (; i < n; i++) {
         // printf("USR CARD ID: %s\n", (ptr_usr_dlst + i)->card_id);
-        if (strcmp(card_id, (ptr_usr_dlst + i)->card_id) == 0) break;
+        if (verifyCardID(ptr_usr_dlst + i, intput_card_id)) break;
     }
 
+    unsigned char cur_usr_card_id_decrypted[ACCOUNT_ID_LENGTH],
+        cur_usr_password_decrypted[PASSWORD_LENGTH];
+    strcpy(cur_usr_card_id_decrypted, intput_card_id);
+    decryptor(ptr_usr_dlst[i].password_cipher, cur_usr_password_decrypted);
+
     double amt;
-    char newpasswd[30], confirmPassword[30], curpasswd[30];
-    char confirm, pass[30];
+    unsigned char newpasswd[30], confirmPassword[30], curpasswd[30];
+    unsigned char confirm, pass[30];
     bool is_usr_pwd_opt_valid = false;
     switch (c) {
         case 1:  // Deposit
@@ -287,7 +321,7 @@ bool userMenu(const char* card_id) {
         case 2:  // Balance Statement and Account information
             printf("\x1B[34mAccount information:\n\n\x1B[0m");
             printf("Account Number: \t%d\n", (ptr_usr_dlst + i)->acc_no);
-            printf("Card ID:        \t%s\n", (ptr_usr_dlst + i)->card_id);
+            printf("Card ID:        \t%s\n", cur_usr_card_id_decrypted);
             printf("First name:     \t%s\n", (ptr_usr_dlst + i)->firstname);
             printf("Last name:      \t%s\n", (ptr_usr_dlst + i)->lastname);
             printf("Balance:        \t%.2lf .RMB\n\n",
@@ -301,19 +335,22 @@ bool userMenu(const char* card_id) {
         case 3:  // Change Password
             printf("\x1B[32mEnter your current password: \x1B[0m");
             scanf(" %29s", curpasswd);
-            if (strcmp(curpasswd, (ptr_usr_dlst + i)->password) == 0) {
+            if (strcmp(curpasswd, cur_usr_password_decrypted) == 0) {
                 printf("\x1B[32mEnter new password: \x1B[0m");
                 scanf(" %29s", newpasswd);
                 printf("\x1B[32mConfirm Password: \x1B[0m");
                 scanf(" %29s", confirmPassword);
                 if (strcmp(newpasswd, confirmPassword)) {
                     printf("\x1B[31mPasswords do not match.\n\x1B[0m");
-                } else if (strcmp(newpasswd, (ptr_usr_dlst + i)->password) == 0)
+                } else if (strcmp(newpasswd, cur_usr_password_decrypted) == 0)
                     printf(
                         "\x1B[31mYour new password is same as old "
                         "password.\n\x1B[0m");
                 else {
-                    strcpy((ptr_usr_dlst + i)->password, newpasswd);
+                    unsigned char newpasswd_encrypted[CIPHER_SIZE];
+                    encryptor(newpasswd, newpasswd_encrypted);
+                    strcpy((ptr_usr_dlst + i)->password_cipher,
+                           newpasswd_encrypted);
                     printf(
                         "\x1B[34mYour password has been changed "
                         "successfully.\n\x1B[0m");
@@ -354,7 +391,7 @@ bool userMenu(const char* card_id) {
                 while (!is_usr_pwd_opt_valid) {  // Confirm password
                     printf("\x1B[32mConfirm Your Password: \x1B[0m");
                     scanf(" %29s", pass);
-                    if (strcmp((ptr_usr_dlst + i)->password, pass)) {
+                    if (strcmp(cur_usr_password_decrypted, pass)) {
                         printf(
                             "\x1B[31mYou have supplied a WRONG "
                             "Password.\n\x1B[0m");
@@ -391,7 +428,7 @@ bool userMenu(const char* card_id) {
 
         case 6:  // Transferring
             int j = 0;
-            char target_card_id[ACCOUNT_ID_LENGTH];
+            unsigned char target_card_id[ACCOUNT_ID_LENGTH];
             double amt = 0.0;
             while (true) {
                 printf("\x1B[32mEnter the target Card ID: \x1B[0m");
@@ -400,7 +437,7 @@ bool userMenu(const char* card_id) {
                     "Please confirm your target Card ID: \x1B[34m%s\n\x1B[0m",
                     target_card_id);
 
-                if (strcmp(target_card_id, (ptr_usr_dlst + i)->card_id) == 0) {
+                if (strcmp(target_card_id, cur_usr_card_id_decrypted) == 0) {
                     printf(
                         "\x1B[31mYou cannot transfer money to your own "
                         "account.\n\x1B[0m");
@@ -410,8 +447,7 @@ bool userMenu(const char* card_id) {
                 // Search for the target user account
                 bool is_found = false;
                 for (; j < n; j++) {
-                    if (strcmp(target_card_id, (ptr_usr_dlst + j)->card_id) ==
-                        0) {
+                    if (verifyCardID(ptr_usr_dlst + j, target_card_id)) {
                         is_found = true;
                         break;
                     }
@@ -422,11 +458,14 @@ bool userMenu(const char* card_id) {
                         "again.\n\x1B[0m");
                     continue;
                 } else {
+                    unsigned char tar_card_id_decrypted[ACCOUNT_ID_LENGTH];
+                    decryptor((ptr_usr_dlst + j)->card_id_cipher,
+                              tar_card_id_decrypted);
                     printf("Your target person is: \x1B[34m%s %s\n\x1B[0m",
                            (ptr_usr_dlst + j)->firstname,
                            (ptr_usr_dlst + j)->lastname);
                     printf("His/her Card ID is: \x1B[34m%s\n\x1B[0m",
-                           (ptr_usr_dlst + j)->card_id);
+                           tar_card_id_decrypted);
                     break;
                 }
             }
@@ -490,20 +529,25 @@ void transfer(Account* fromAccount, Account* toAccount, double amt) {
     }
 
     // Transfer to self - Withdrawal
-    if (fromAccount->card_id == toAccount->card_id) {
+    if (fromAccount->card_id_cipher == toAccount->card_id_cipher) {
         int transnum = _get_acc_transnum(fromAccount);
         fromAccount->transaction_hist[transnum].pre_balance =
             fromAccount->balance;
         fromAccount->balance -= amt;
         fromAccount->transaction_hist[transnum].post_balance =
             fromAccount->balance;
-        strcpy(fromAccount->transaction_hist[transnum].target_card_id,
-               fromAccount->card_id);
+        strcpy(fromAccount->transaction_hist[transnum].target_card_id_cipher,
+               fromAccount->card_id_cipher);
         return;
     }
 
-    printf("\x1B[34m  Source Card ID: %s\n", fromAccount->card_id);
-    printf("  Target Card ID: %s\n", toAccount->card_id);
+    unsigned char fromAccount_card_id_decrypted[ACCOUNT_ID_LENGTH],
+        toAccount_card_id_decrypted[ACCOUNT_ID_LENGTH];
+    decryptor(fromAccount->card_id_cipher, fromAccount_card_id_decrypted);
+    decryptor(toAccount->card_id_cipher, toAccount_card_id_decrypted);
+
+    printf("\x1B[34m  Source Card ID: %s\n", fromAccount_card_id_decrypted);
+    printf("  Target Card ID: %s\n", toAccount_card_id_decrypted);
     printf("Processing, please be patient...\n\x1B[0m");
     Sleep(1000);
 
@@ -520,16 +564,18 @@ void transfer(Account* fromAccount, Account* toAccount, double amt) {
     fromAccount->balance -= amt;
     fromAccount->transaction_hist[fromAccount_transcount].post_balance =
         fromAccount->balance;
-    strcpy(fromAccount->transaction_hist[fromAccount_transcount].target_card_id,
-           toAccount->card_id);
+    strcpy(fromAccount->transaction_hist[fromAccount_transcount]
+               .target_card_id_cipher,
+           toAccount->card_id_cipher);
 
     toAccount->transaction_hist[toAccount_transcount].pre_balance =
         toAccount->balance;
     toAccount->balance += amt;
     toAccount->transaction_hist[toAccount_transcount].post_balance =
         toAccount->balance;
-    strcpy(toAccount->transaction_hist[toAccount_transcount].target_card_id,
-           fromAccount->card_id);
+    strcpy(
+        toAccount->transaction_hist[toAccount_transcount].target_card_id_cipher,
+        fromAccount->card_id_cipher);
 
     printf("\x1B[32mTransaction successful.\n\x1B[0m");
 }
@@ -547,13 +593,14 @@ void register_user(FILE* db) {
     Account* ptr_usr_data = (Account*)malloc(acc_size);
     _init_acc_transinfo(ptr_usr_data);
 
-    char lastNameTemp[30], firstNameTemp[30], password[PASSWORD_LENGTH],
-        card_idTemp[ACCOUNT_ID_LENGTH];
-    char confirmPassword[PASSWORD_LENGTH], checkSave;
+    unsigned char lastNameTemp[30], firstNameTemp[30],
+        password[PASSWORD_LENGTH], card_idTemp[ACCOUNT_ID_LENGTH];
+    unsigned char confirmPassword[PASSWORD_LENGTH], checkSave;
 
     printf("\x1B[34mCreate new account:\n\x1B[0m");
     printf(
-        "\x1B[31mWarning: Password Must contain less than ten(10) Alphanumeric "
+        "\x1B[31mWarning: Password Must contain less than sixteen(16) "
+        "Alphanumeric "
         "Digits.\n\n\x1B[0m");
     printf("\x1B[32mEnter First Name: \x1B[0m");
     scanf(" %29[^'\n']", firstNameTemp);
@@ -568,7 +615,7 @@ void register_user(FILE* db) {
         // Validate the duplication
         chk = false;
         while (fread(ptr_usr_data, acc_size, 1, db) == 1) {
-            if (ptr_usr_data->card_id == NULL) {
+            if (ptr_usr_data->card_id_cipher == NULL) {
                 printf(
                     "\x1B[31mError: Memory allocation for card_id "
                     "failed!\n\x1B[0m");
@@ -577,7 +624,7 @@ void register_user(FILE* db) {
                 ptr_usr_data = NULL;
                 return;
             }
-            if (strcmp(ptr_usr_data->card_id, card_idTemp) == 0) chk = true;
+            if (verifyCardID(ptr_usr_data, card_idTemp)) chk = true;
         }
         if (chk) {
             printf("\x1B[31mCard ID already exists.\n\x1B[0m");
@@ -596,7 +643,7 @@ void register_user(FILE* db) {
     } else {
         printf("\x1B[31mSave User Information? [Y/n]: \n\x1B[0m");
         while (true) {
-            char ans = '\0';
+            unsigned char ans = '\0';
             scanf(" %c", &ans);
 
             if (ans == 'y' || ans == 'Y') {
@@ -604,10 +651,15 @@ void register_user(FILE* db) {
                 int n = 0;
                 while (fread(ptr_usr_data, acc_size, 1, db) == 1) n++;
 
-                strcpy(ptr_usr_data->card_id, card_idTemp);
+                unsigned char card_id_cipher[ACCOUNT_ID_LENGTH],
+                    password_cipher[PASSWORD_LENGTH];
+                encryptor(card_idTemp, card_id_cipher);
+                encryptor(password, password_cipher);
+
                 strcpy(ptr_usr_data->firstname, firstNameTemp);
                 strcpy(ptr_usr_data->lastname, lastNameTemp);
-                strcpy(ptr_usr_data->password, password);
+                strcpy(ptr_usr_data->card_id_cipher, card_id_cipher);
+                strcpy(ptr_usr_data->password_cipher, password_cipher);
                 ptr_usr_data->acc_no = n + 1;
                 ptr_usr_data->balance = 0.0;
                 _init_acc_transinfo(ptr_usr_data);
