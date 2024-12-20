@@ -13,13 +13,11 @@ A basic ATM simulator that can be run on a terminal window, which is written in 
 2. Add a SuperUser option for administrator to add/delete/modify users
 
 #### __TODO__
-❌ Encipherment for Card IDs and Passwords
+❌ Add documents
 
-❌ Plug in a forecast function based on the balance change
+❌ Enhance the readability of the code
 
 ❌ Plug in the query for history transactions and balance change (SuperUser)
-
-❌ Finish the access to ALL-Users-List (SuperUser)
 
 ---
 
@@ -32,6 +30,15 @@ A basic ATM simulator that can be run on a terminal window, which is written in 
 ✅ Add the transfer feature
 
 ✅ Add the transaction-history feature
+
+✅ Encipherment for Card IDs and Passwords
+
+✅ Finish the access to ALL-Users-List (SuperUser)
+
+## Special Acknowledgement
+The encryption and decryption of the card ID and password is Advanced Encryption Standard, [AES](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard), and mostly based on the code from the following [repository](https://github.com/m3y54m/aes-in-c).
+
+Thanks to the [authors](https://github.com/m3y54m/aes-in-c/commits?author=m3y54m) for their generous sharing of knowledge.
 
 ## How to use
 Steps to execute:
