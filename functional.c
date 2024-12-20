@@ -1,4 +1,4 @@
-// Basic Implementation of AES
+// Functionals
 //
 
 #include <stdio.h>   // for printf
@@ -6,6 +6,80 @@
 
 #include "server.h"
 #define BLOCK_SIZE 16  // cannot be changed
+
+#include <stdio.h>
+#include <stdlib.h>
+
+// Basic Implementation of Linear Forecast
+//
+
+// Function to forecast the next few values using linear extrapolation
+ForecastResult linear_forecast(double* data, int data_size,
+                               int forecast_count) {
+    ForecastResult result;
+    result.values = NULL;
+    result.count = 0;
+
+    if (data_size < 2 || forecast_count <= 0) {
+        fprintf(stderr,
+                "\x1B[31mError: Not enough data points or invalid forecast "
+                "count.\n\x1B[0m");
+        return result;
+    }
+
+    // Calculate the slope (average difference between consecutive data points)
+    double sum_diff = 0;
+    for (int i = 1; i < data_size; i++) {
+        sum_diff += data[i] - data[i - 1];
+    }
+    double slope = sum_diff / (data_size - 1);
+
+    // Allocate memory for forecasted values
+    result.values = (double*)malloc(sizeof(double) * forecast_count);
+    if (result.values == NULL) {
+        fprintf(stderr, "\x1B[31mError: Memory allocation failed.\n\x1B[0m");
+        return result;
+    }
+
+    // Perform linear extrapolation
+    double last_value = data[data_size - 1];
+    for (int i = 0; i < forecast_count; i++) {
+        result.values[i] = last_value + slope * (i + 1);
+    }
+
+    result.count = forecast_count;
+    return result;
+}
+
+void forecast_demo() {
+    double data[] = {2, 4, 6, 8, 10, 12, 14, 16, 18, 20};
+    int data_size = sizeof(data) / sizeof(data[0]);
+    int forecast_count = 3;  // Number of values to forecast
+
+    ForecastResult forecast = linear_forecast(data, data_size, forecast_count);
+
+    if (forecast.count > 0) {
+        printf("Original Data:\n");
+        for (int i = 0; i < data_size; i++) {
+            printf("%.2f ", data[i]);
+        }
+        printf("\n");
+
+        printf("Forecasted Values:\n");
+        for (int i = 0; i < forecast.count; i++) {
+            printf("%.2f ", forecast.values[i]);
+        }
+        printf("\n");
+
+        // Free allocated memory
+        free(forecast.values);
+    }
+}
+
+// Basic Implementation of AES
+//
+// Reference: https://github.com/m3y54m/aes-in-c
+// Thanks to m3y54m, for their generous sharing of their code.
 
 enum ERROR_CODES {
     SUCCESS = 0,
@@ -18,14 +92,14 @@ enum KEY_SIZES { SIZE_16 = 16, SIZE_24 = 24, SIZE_32 = 32 };
 //
 void expand_key(unsigned char* expanded_key, unsigned char* key,
                 enum KEY_SIZES key_size, size_t expanded_key_size);
-char aes_encrypt(unsigned char* input, unsigned char* output,
+char aes_encrypt(const unsigned char* input, unsigned char* output,
                  unsigned char* key, enum KEY_SIZES key_size);
-char aes_decrypt(unsigned char* input, unsigned char* output,
+char aes_decrypt(const unsigned char* input, unsigned char* output,
                  unsigned char* key, enum KEY_SIZES key_size);
 
 int get_cipher_size() { return BLOCK_SIZE; }
 int get_key_size() { return SIZE_16; }
-void _padding(unsigned char* input, unsigned char* output) {
+void _padding(const unsigned char* input, unsigned char* output) {
     int i = 0;
     for (; input[i] != 0x00; i++) output[i] = input[i];
     for (; i < BLOCK_SIZE; i++) output[i] = 0x00;
@@ -33,7 +107,7 @@ void _padding(unsigned char* input, unsigned char* output) {
 
 // API Calls
 //
-void encryptor(unsigned char* input, unsigned char* cipher) {
+void encryptor(const unsigned char* input, unsigned char* cipher) {
     unsigned char key[SIZE_16] = {0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae,
                                   0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88,
                                   0x09, 0xcf, 0x4f, 0x3c};
@@ -41,7 +115,7 @@ void encryptor(unsigned char* input, unsigned char* cipher) {
     _padding(input, padded_input);
     aes_encrypt(padded_input, cipher, key, SIZE_16);
 }
-void decryptor(unsigned char* cipher, unsigned char* output) {
+void decryptor(const unsigned char* cipher, unsigned char* output) {
     unsigned char key[SIZE_16] = {0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae,
                                   0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88,
                                   0x09, 0xcf, 0x4f, 0x3c};
@@ -69,7 +143,7 @@ void demo() {
 
 // Substitution Box
 unsigned char sbox[256] = {
-    // 0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
+    // 0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,  // 0
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,  // 1
     0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,  // 2
@@ -286,7 +360,7 @@ void aes_backbone(unsigned char* state, unsigned char* expanded_key,
     add_round_key(state, round_key);
 }
 
-char aes_encrypt(unsigned char* input, unsigned char* output,
+char aes_encrypt(const unsigned char* input, unsigned char* output,
                  unsigned char* key, enum KEY_SIZES key_size) {
     int expanded_key_size, n_rounds;
     unsigned char* expanded_key;
@@ -401,7 +475,7 @@ void aes_inv_backbone(unsigned char* state, unsigned char* expanded_key,
     add_round_key(state, round_key);
 }
 
-char aes_decrypt(unsigned char* input, unsigned char* output,
+char aes_decrypt(const unsigned char* input, unsigned char* output,
                  unsigned char* key, enum KEY_SIZES key_size) {
     int expanded_key_size, n_rounds;
     unsigned char* expanded_key;
